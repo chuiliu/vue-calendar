@@ -137,26 +137,33 @@ export default {
       let curEndDateStr = this.curEndDate.dateStr
       // this.mode === 0 ? this.startDate = date : this.endDate = date
 
-      // console.log(+new Date(selectDateStr) - new Date(this.curStartDate.dateStr) )
+      console.log(+new Date(selectDateStr) - new Date(this.curStartDate.dateStr))
 
       if (selectDateStr === curStartDateStr || selectDateStr === curEndDateStr) {
         return
       }
 
       if (curStartDateStr && curEndDateStr) {
-        console.log(1)
         this.curStartDate.startDate = false
         this.curEndDate.endDate = false
         d.startDate = true
         d.endDate = false
         this.curStartDate = d
         this.curEndDate = {}
-      } else if (curStartDateStr && !curEndDateStr) {
-        console.log(2)
-        this.curEndDate.endDate = false
-        d.startDate = false
-        d.endDate = true
-        this.curEndDate = d
+      } else if (curStartDateStr) {
+        if (+new Date(selectDateStr) - new Date(curStartDateStr) < 0) {
+          this.curStartDate.startDate = false
+          this.curEndDate.endDate = false
+          d.startDate = true
+          d.endDate = false
+          this.curStartDate = d
+          this.curEndDate = {}
+        } else {
+          this.curEndDate.endDate = false
+          d.startDate = false
+          d.endDate = true
+          this.curEndDate = d
+        }
       }
 
       // if (this.mode === 0) {
