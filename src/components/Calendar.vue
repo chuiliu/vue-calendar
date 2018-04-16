@@ -21,7 +21,7 @@
               {{date.date}}
               <div class="desc" v-if="date.startDate">开始</div>
               <div class="desc" v-else-if="date.endDate">结束</div>
-              <div class="desc" v-else-if="date.today">今天</div>
+              <div class="desc" v-else-if="date.isToday">今天</div>
             </div>
           </div>
         </div>
@@ -41,10 +41,12 @@ export default {
       startDate: this.start,
       endDate: this.end,
       curStartDate: {
+        dateStr: this.start,
         startDate: false,
         endDate: false
       },
       curEndDate: {
+        dateStr: this.end,
         startDate: false,
         endDate: false
       }
@@ -52,6 +54,7 @@ export default {
   },
   created () {
     this.getData()
+    console.log(this.curStartDate)
   },
   methods: {
     getData () {
@@ -97,6 +100,7 @@ export default {
       for (let i = 1; i <= totalDate; i++) {
         let today = new Date().toDateString()
         let curDate = new Date(y, m - 1, i).toDateString()
+        let curDateStr = [y, m, i].join('-')
         let startDate = new Date(this.startDate).toDateString()
         let endDate = new Date(this.endDate).toDateString()
 
@@ -106,7 +110,8 @@ export default {
 
         let date = {
           date: i,
-          today: isToday,
+          dateStr: curDateStr,
+          isToday: isToday,
           startDate: isStartDate,
           endDate: isEndDate
         }
@@ -124,22 +129,47 @@ export default {
       return ret
     },
     selectDate (y, m, d) {
-      let date = d.date
-      date = [y, m, date].join('-')
+      if (!d.date) {
+        return
+      }
+      let selectDateStr = d.dateStr
+      let curStartDateStr = this.curStartDate.dateStr
+      let curEndDateStr = this.curEndDate.dateStr
       // this.mode === 0 ? this.startDate = date : this.endDate = date
 
-      // if ()
-      if (this.mode === 0) {
+      // console.log(+new Date(selectDateStr) - new Date(this.curStartDate.dateStr) )
+
+      if (selectDateStr === curStartDateStr || selectDateStr === curEndDateStr) {
+        return
+      }
+
+      if (curStartDateStr && curEndDateStr) {
+        console.log(1)
         this.curStartDate.startDate = false
+        this.curEndDate.endDate = false
         d.startDate = true
         d.endDate = false
         this.curStartDate = d
-      } else {
+        this.curEndDate = {}
+      } else if (curStartDateStr && !curEndDateStr) {
+        console.log(2)
         this.curEndDate.endDate = false
         d.startDate = false
         d.endDate = true
         this.curEndDate = d
       }
+
+      // if (this.mode === 0) {
+      //   this.curStartDate.startDate = false
+      //   d.startDate = true
+      //   d.endDate = false
+      //   this.curStartDate = d
+      // } else {
+      //   this.curEndDate.endDate = false
+      //   d.startDate = false
+      //   d.endDate = true
+      //   this.curEndDate = d
+      // }
     },
     back () {
       this.$router.back()
