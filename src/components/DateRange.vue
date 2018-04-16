@@ -1,10 +1,16 @@
 <template>
-  <div>
+  <div class="date-field">
     <router-link to="/c">
-      <input type="text" v-model="startDate">
+      <div class="form-group">
+        <label>起始日期</label>
+        <input type="text" v-model="startDate">
+      </div>
     </router-link>
     <router-link to="/c">
-      <input type="text" v-model="endDate">
+      <div class="form-group">
+        <label>结束日期</label>
+        <input type="text" v-model="endDate">
+      </div>
     </router-link>
   </div>
 </template>

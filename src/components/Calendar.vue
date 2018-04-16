@@ -1,49 +1,63 @@
 <template>
   <div class="calendar">
-    <header class="cal-header">
-      <div class="btn btn-back" @click="back()">返回</div>
-      <div class="cal-title">{{title}}</div>
-      <div class="btn btn-ok" @click="confirm()">完成</div>
-    </header>
-    <div class="select-area">
-      <div class="from" @click="updateMode(0)">{{startDate}}</div>~
-      <div class="to" @click="updateMode(1)">{{endDate}}</div>
-    </div>
-    <div class="week-bar">
-      <div class="cell" v-for="w in week" :key="w">{{w}}</div>
-    </div>
-    <section v-for="(item, index) in data" :key="index">
-      <div class="month-title">{{item.year}}-{{item.month}}</div>
-      <div class="month-body">
-        <div class="cell" v-for="date in item.dateList" :key="date" @click="selectDate(item.year, item.month, date)">{{date}}</div>
+    <header class="">
+      <div class="cal-header">
+        <div class="btn btn-back" @click="back()">取消</div>
+        <div class="cal-title">选择日期</div>
       </div>
-    </section>
+      <div class="week-bar">
+        <div class="cell" v-for="w in week" :key="w">{{w}}</div>
+      </div>
+    </header>
+    <div class="cal-body">
+      <section v-for="(item, index) in data" :key="index">
+        <div class="month-title">{{item.year}}年{{item.month}}月</div>
+        <div class="month-body">
+          <div class="cell"
+            v-for="(date, index) in item.dateList"
+            :key="index"
+            @click="selectDate(item.year, item.month, date)">
+            <div class="inner" :class="{'start-date': date.startDate, 'end-date': date.endDate}">
+              {{date.date}}
+              <div class="desc" v-if="date.startDate">开始</div>
+              <div class="desc" v-else-if="date.endDate">结束</div>
+              <div class="desc" v-else-if="date.today">今天</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
   </div>
 </template>
 
 <script>
 export default {
   name: 'Calendar',
-  props: ['start', 'end', 'tt'],
+  props: ['start', 'end'],
   data () {
     return {
       week: ['日', '一', '二', '三', '四', '五', '六'],
       data: [],
-      mode: 0,
-      title: '开始日期',
       startDate: this.start,
-      endDate: this.end
+      endDate: this.end,
+      curStartDate: {
+        startDate: false,
+        endDate: false
+      },
+      curEndDate: {
+        startDate: false,
+        endDate: false
+      }
     }
   },
   created () {
     this.getData()
-    console.log(this.start, this.end)
   },
   methods: {
     getData () {
       let ret = []
-      let startY = 2017
-      let startM = 12
+      let startY = 2018
+      let startM = 3
       let endY = 2018
       let endM = 5
       let totalMonth = (endY - startY) * 12 + (endM - startM) + 1
@@ -74,26 +88,60 @@ export default {
       let totalDate = lastDate.getDate() // 月总天数
 
       for (let i = 0; i < firstDateWeek; i++) {
-        ret[i] = null
+        ret[i] = {
+          date: null,
+          today: false
+        }
       }
 
       for (let i = 1; i <= totalDate; i++) {
-        ret.push(i)
+        let today = new Date().toDateString()
+        let curDate = new Date(y, m - 1, i).toDateString()
+        let startDate = new Date(this.startDate).toDateString()
+        let endDate = new Date(this.endDate).toDateString()
+
+        let isToday = curDate === today
+        let isStartDate = curDate === startDate
+        let isEndDate = curDate === endDate
+
+        let date = {
+          date: i,
+          today: isToday,
+          startDate: isStartDate,
+          endDate: isEndDate
+        }
+
+        ret.push(date)
+
+        if (isStartDate) {
+          this.curStartDate = date
+        }
+
+        if (isEndDate) {
+          this.curEndDate = date
+        }
       }
       return ret
     },
     selectDate (y, m, d) {
-      let date = Array.prototype.slice.call(arguments).join('-')
-      this.mode === 0 ? this.startDate = date : this.endDate = date
-    },
-    updateMode (mode) {
-      this.mode = mode
-      this.title = mode === 0 ? '开始日期' : '结束日期'
+      let date = d.date
+      date = [y, m, date].join('-')
+      // this.mode === 0 ? this.startDate = date : this.endDate = date
+
+      // if ()
+      if (this.mode === 0) {
+        this.curStartDate.startDate = false
+        d.startDate = true
+        d.endDate = false
+        this.curStartDate = d
+      } else {
+        this.curEndDate.endDate = false
+        d.startDate = false
+        d.endDate = true
+        this.curEndDate = d
+      }
     },
     back () {
-      this.$router.back()
-    },
-    confirm () {
       this.$router.back()
     }
   }
@@ -107,50 +155,78 @@ export default {
   box-sizing: border-box;
 }
 .calendar {
-  .background-color: #eee;
+  .background-color: #fff;
+}
+header {
+  position: fixed;
+  width: 100%;
+  z-index: 1;
+  border-bottom: 1px solid #ccc;
+  background-color: #eee;
 }
 .cal-header {
-  height: 2em;
-  display: flex;
-  flex-flow: row nowrap;
-  justify-content: space-between;
-  align-items: center;
+  height: 2rem;
+  line-height: 2rem;
+}
+.cal-title {
+  font-size: 1.1em;
 }
 .btn {
   padding: 0 .6em;
 }
-.btn-ok {
-  color: #fc7878;
-}
-.select-area {
-  display: flex;
-  flex-flow: row nowrap;
-  justify-content: space-around;
-  align-items: center;
-  font-size: 1.2em;
-  font-weight: 500;
-  line-height: 2.5;
+.btn-back {
+  position: absolute;
+  width: 3.25rem;
+  color: rgb(94, 156, 225);
 }
 .week-bar,
 .month-body {
   display: flex;
   flex-wrap: wrap;
-  background-color: #fff;
 }
 .month-title {
   background-color: #eee;
   line-height: 2em;
 }
 .cell {
+  /*position: relative;*/
+  padding: .2em;
   width: 14.28571%;
   height: 2.8rem;
-  line-height: 2.8rem;
-  /*border: 1px solid #eee;*/
+  line-height: 2rem;
   text-align: center;
+  font-size: 0.9em;
   background-color: #fff;
 }
 .cell:nth-child(7n),
 .cell:nth-child(7n+1) {
-  color: #fc7878;
+  color: rgb(94, 156, 225);
+}
+.cell .inner {
+  position: relative;
+  height: 100%;
+  border-radius: 3px;
+}
+.cell .start-date,
+.cell .end-date {
+  background-color: rgb(94, 156, 225);
+  color: #fff;
+}
+.cell .desc {
+  position: absolute;
+  bottom: .25em;
+  width: 100%;
+  margin: 0 auto;
+  font-size: 0.6em;
+  line-height: 1;
+  color: inherit;
+}
+.week-bar .cell {
+  height: 1.75rem;
+  line-height: 1.75rem;
+  background-color: inherit;
+}
+.cal-body {
+  padding-top: 3.75rem;
 }
 </style>
