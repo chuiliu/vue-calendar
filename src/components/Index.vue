@@ -13,7 +13,6 @@
     <Calendar
       :show="isShow"
       :range="range"
-      :format="format"
       :from="startDate"
       :to="endDate"
       @complete="complete"

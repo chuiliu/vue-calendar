@@ -78,7 +78,6 @@ export default {
   watch: {
     show: function (isShow) {
       if (isShow) {
-        console.log('show')
         this.getData()
       }
     }
