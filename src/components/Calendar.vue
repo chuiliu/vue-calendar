@@ -1,68 +1,104 @@
 <template>
-  <div class="calendar">
-    <header class="">
+  <transition name="slide">
+    <div class="calendar" v-show="show">
       <div class="cal-header">
-        <div class="btn btn-back" @click="back()">取消</div>
-        <div class="cal-title">选择日期</div>
+        <div class="header-bar">
+          <div class="btn btn-back" @click="back">取消</div>
+          <div class="cal-title">选择日期</div>
+        </div>
+        <div class="week-bar">
+          <div class="cell" v-for="w in week" :key="w">{{w}}</div>
+        </div>
       </div>
-      <div class="week-bar">
-        <div class="cell" v-for="w in week" :key="w">{{w}}</div>
-      </div>
-    </header>
-    <div class="cal-body">
-      <section v-for="(item, index) in data" :key="index">
-        <div class="month-title">{{item.year}}年{{item.month}}月</div>
-        <div class="month-body">
-          <div class="cell"
-            v-for="(date, index) in item.dateList"
-            :key="index"
-            @click="selectDate(item.year, item.month, date)">
-            <div class="inner" :class="{'start-date': date.startDate, 'end-date': date.endDate}">
-              {{date.date}}
-              <div class="desc" v-if="date.startDate">开始</div>
-              <div class="desc" v-else-if="date.endDate">结束</div>
-              <div class="desc" v-else-if="date.isToday">今天</div>
+      <div class="cal-body">
+        <section v-for="(item, index) in data" :key="index">
+          <div class="month-title">{{item.year}}年{{item.month}}月</div>
+          <div class="month-body">
+            <div class="cell" v-for="(date, index) in item.dateList" :key="index" @click="selectDate(item.year, item.month, date)">
+              <div class="inner" :class="{'start-date': date.isStartDate, 'end-date': date.isEndDate}">
+                {{date.date}}
+                <div class="cell-desc" v-if="date.isStartDate">开始</div>
+                <div class="cell-desc" v-else-if="date.isEndDate">结束</div>
+                <div class="cell-desc" v-else-if="date.isToday">今天</div>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
     </div>
-  </div>
+  </transition>
 </template>
 
 <script>
 export default {
   name: 'Calendar',
-  props: ['start', 'end'],
+  props: {
+    'from': {
+      type: String,
+      default: null
+    },
+    'to': {
+      type: String,
+      default: null
+    },
+    'show': {
+      default: false
+    },
+    'range': {
+      type: Array,
+      default: () => {
+        let date = new Date()
+        let y = date.getFullYear()
+        let m = date.getMonth() + 1
+        let start = (y - 1) + '-' + m
+        let end = (y + 1) + '-' + m
+        return [start, end]
+      }
+    }
+  },
   data () {
     return {
       week: ['日', '一', '二', '三', '四', '五', '六'],
       data: [],
-      startDate: this.start,
-      endDate: this.end,
       curStartDate: {
-        dateStr: this.start,
-        startDate: false,
-        endDate: false
+        dateStr: this.from,
+        isStartDate: false,
+        isEndDate: false
       },
       curEndDate: {
-        dateStr: this.end,
-        startDate: false,
-        endDate: false
+        dateStr: this.to,
+        isStartDate: false,
+        isEndDate: false
       }
     }
   },
   created () {
     this.getData()
-    console.log(this.curStartDate)
+  },
+  watch: {
+    show: function (isShow) {
+      if (isShow) {
+        console.log('show')
+        this.getData()
+      }
+    }
   },
   methods: {
     getData () {
       let ret = []
-      let startY = 2018
-      let startM = 3
-      let endY = 2018
-      let endM = 5
+      let startY
+      let startM
+      let endY
+      let endM
+      if (this.range) {
+        let s = this.range[0].split('-')
+        let e = this.range[1].split('-')
+        startY = s[0]
+        startM = s[1]
+        endY = e[0]
+        endM = e[1]
+      }
+
       let totalMonth = (endY - startY) * 12 + (endM - startM) + 1
 
       let curY = startY
@@ -101,8 +137,8 @@ export default {
         let today = new Date().toDateString()
         let curDate = new Date(y, m - 1, i).toDateString()
         let curDateStr = [y, m, i].join('-')
-        let startDate = new Date(this.startDate).toDateString()
-        let endDate = new Date(this.endDate).toDateString()
+        let startDate = new Date(this.from).toDateString()
+        let endDate = new Date(this.to).toDateString()
 
         let isToday = curDate === today
         let isStartDate = curDate === startDate
@@ -112,8 +148,8 @@ export default {
           date: i,
           dateStr: curDateStr,
           isToday: isToday,
-          startDate: isStartDate,
-          endDate: isEndDate
+          isStartDate: isStartDate,
+          isEndDate: isEndDate
         }
 
         ret.push(date)
@@ -135,51 +171,36 @@ export default {
       let selectDateStr = d.dateStr
       let curStartDateStr = this.curStartDate.dateStr
       let curEndDateStr = this.curEndDate.dateStr
-      // this.mode === 0 ? this.startDate = date : this.endDate = date
-
-      console.log(+new Date(selectDateStr) - new Date(this.curStartDate.dateStr))
 
       if (selectDateStr === curStartDateStr || selectDateStr === curEndDateStr) {
         return
       }
 
-      if (curStartDateStr && curEndDateStr) {
-        this.curStartDate.startDate = false
-        this.curEndDate.endDate = false
-        d.startDate = true
-        d.endDate = false
+      if ((curStartDateStr && ((curEndDateStr) || (+new Date(selectDateStr) - new Date(curStartDateStr) < 0))) || (!curStartDateStr && !curEndDateStr)) {
+        // 设置开始日期
+        this.curStartDate.isStartDate = false
+        this.curEndDate.isEndDate = false
+        d.isStartDate = true
+        d.isEndDate = false
         this.curStartDate = d
         this.curEndDate = {}
-      } else if (curStartDateStr) {
-        if (+new Date(selectDateStr) - new Date(curStartDateStr) < 0) {
-          this.curStartDate.startDate = false
-          this.curEndDate.endDate = false
-          d.startDate = true
-          d.endDate = false
-          this.curStartDate = d
-          this.curEndDate = {}
-        } else {
-          this.curEndDate.endDate = false
-          d.startDate = false
-          d.endDate = true
-          this.curEndDate = d
-        }
+      } else {
+        // 设置结束日期
+        this.curEndDate.isEndDate = false
+        d.isStartDate = false
+        d.isEndDate = true
+        this.curEndDate = d
       }
 
-      // if (this.mode === 0) {
-      //   this.curStartDate.startDate = false
-      //   d.startDate = true
-      //   d.endDate = false
-      //   this.curStartDate = d
-      // } else {
-      //   this.curEndDate.endDate = false
-      //   d.startDate = false
-      //   d.endDate = true
-      //   this.curEndDate = d
-      // }
+      if (this.curStartDate.dateStr && this.curEndDate.dateStr) {
+        // 完成选择
+        setTimeout(() => {
+          this.$emit('complete', this.curStartDate.dateStr, this.curEndDate.dateStr)
+        }, 150)
+      }
     },
     back () {
-      this.$router.back()
+      this.$emit('complete', this.from, this.to)
     }
   }
 }
@@ -192,16 +213,30 @@ export default {
   box-sizing: border-box;
 }
 .calendar {
+  position: fixed;
+  top: 0;
+  z-index: 999;
+  width: 100%;
+  height: 100%;
+  overflow-y: scroll;
   .background-color: #fff;
 }
-header {
+.cal-header {
   position: fixed;
   width: 100%;
   z-index: 1;
-  border-bottom: 1px solid #ccc;
-  background-color: #eee;
+  background-color: #f5f5f5;
 }
-.cal-header {
+.cal-header::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background-color: #aaa;
+  transform: scaleY(0.5);
+}
+.header-bar {
   height: 2rem;
   line-height: 2rem;
 }
@@ -222,11 +257,12 @@ header {
   flex-wrap: wrap;
 }
 .month-title {
-  background-color: #eee;
-  line-height: 2em;
+  background-color: #f5f5f5;
+  line-height: 2.5em;
+  font-size: 0.9em;
+  color: #666;
 }
 .cell {
-  /*position: relative;*/
   padding: .2em;
   width: 14.28571%;
   height: 2.8rem;
@@ -249,7 +285,7 @@ header {
   background-color: rgb(94, 156, 225);
   color: #fff;
 }
-.cell .desc {
+.cell .cell-desc {
   position: absolute;
   bottom: .25em;
   width: 100%;
@@ -265,5 +301,12 @@ header {
 }
 .cal-body {
   padding-top: 3.75rem;
+}
+.slide-enter-active, .slide-leave-active {
+  transition: transform .25s, opacity .1s;
+}
+.slide-enter, .slide-leave-to {
+  opacity: 0;
+  transform: translateY(3rem);
 }
 </style>

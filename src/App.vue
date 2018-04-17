@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <router-view :start="startDate" :end="endDate" />
+    <router-view :start="startDate" :end="endDate"/>
   </div>
 </template>
 
